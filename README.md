@@ -6,4 +6,4 @@ During the sessioin, I will walk through how to scrape a table of OSHA inspectio
 
 As homework, I ask you to try scraping several hundred comment letters for a proposed federal rule.
 
-This session will be the best for someone with some knowledge of R, including data types, subsetting a dataframe, piping (%>%) and how to create a basic function. 
+This session will be the best for someone with some knowledge of R, including data types, subsetting a dataframe, piping (%>%) and how to create a basic function. Knowledge with HTML/CSS is helpful but not necessary.
