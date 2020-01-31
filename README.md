@@ -1,1 +1,1 @@
-# nicar20_scraping_r
+# Nicar 2020 Web Scraping with R
