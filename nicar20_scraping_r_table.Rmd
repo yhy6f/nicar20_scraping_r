@@ -1,0 +1,298 @@
+---
+title: "nicar20_scraping_r_table"
+author: "YHan"
+date: "12/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Web scraping with R
+This is a tutorial that serves as an intro to scraping with R using Rvest library. It walks through how to scrape a table of OSHA inspections, extract information based on italic style of the text, scrape hyperlinked tables. It also offers tips on how to deal with errors and avoid being blocked as a robot.
+
+## A quick intro to webpage
+Webpages usually consist of 
+- HTML (HyperText Markup Language) files, which build structure of the page
+- CSS (Cascading Style Sheet) files, which define the style or look of the page
+- JavaScript files, which make the page interactive
+
+An HTML file is a text file with HTML tags, which are reserved keywords for certain elements and they remind your your web browswer, "hey, here's a table/paragraph/list, please display it as a table/paragraph/list". And most tags must be in pairs, an opening tag and a closing tag, i.e. <table></table>, <p></p>, <li></li>
+
+These tags can have attributes such as
+-hyperlinks: <a href="https://www.osha.gov/">Occupational Safety and Health</a>
+-class: <table class="table table-bordered">
+-id: <h1 id="myHeader">Hello World!</h1>
+
+You can learn more about HTML tags [here] (https://www.w3schools.com/tags/tag_comment.asp
+)
+
+## Inspect elements
+To extract the elements we want from the html document, we need to find the right tags and attributes in the source code. Copy the url below and paste in your browser, hit enter. Place your mourse on "Activity" column of the table, right click on the page and click "Inspect". "Elements" tab highlights where your mouse placed. Sources tab shows the entire html file.
+
+The HTML code looks like a tree. It has two main branches: <head>, <body>, each has consist of <div>s, (<div> is an HTML tag for section). Within each <div>, there can be more <div>s, or <table> and other elements. Within a <table>, there is <thead> (table head), <tbody> (table body), <tr> (table row), <th> (header cell), <td> (data cell).
+
+## Now let's scrape a table!
+
+First load the libraries we need.
+```{r}
+## install the package
+#install.packages("rvest")
+#install.packages("dplyr")
+
+## load the package
+library(rvest)
+library(dplyr)
+```
+
+This webpage has 159 osha citations in the messenger courier industry in 2019. 
+
+```{r}
+#url of website to be scrapped
+
+url <- "https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=0&p_sort=&p_desc=DESC&p_direction=Next&p_show=200"
+```
+
+## read_html(): read the webpage/html document into R
+```{r}
+#read the html content into R and assigns to webpage object
+webpage <- read_html(url, encoding = "windows-1252")
+
+webpage
+```
+Tip: to find the right encoding, run "document.inputEncoding" in the console tab.
+
+## html_nodes(): select elements/nodes from the html
+
+We can select elements in the html document with a certain feature, by passing on what is called "CSS selector" to the function. The following line is telling R to pull nodes with "table" tags. 
+
+```{r}
+html_nodes(webpage,"table")
+```
+
+It can also choose elements based on class attribute or id attribute and so on. Here we pass on the value of class attribute of the table. There are two tables with the same class attributes. The table we want is the second node in the returned nodeset.
+
+```{r}
+html_nodes(webpage,"[class='table table-bordered table-striped']")
+```
+
+## html_table(): parse the table
+
+After we get the node with the table we're trying to target, we can parse it with html_table() function. 
+
+```{r}
+inspections <- html_nodes(webpage,"[class='table table-bordered table-striped']")[2] %>% html_table() %>% data.frame()
+
+inspections <- inspections[,-1] ## remove the first column which is empty
+  
+head(inspections)
+```
+
+## Save the table
+If you are happy with this table, you can save it locally as a csv file.
+```{r}
+write.csv(inspections, "~/Desktop/nicar2020/nicar_2020_scraping_r/inspections.csv")
+```
+
+## Extract activity numbers with html_attr()
+In the scraped table, Activity column don't have decimal places. Let's scrape the complete activity numbers and replace the Activity column. 
+
+Activity numbers appear as the "title" attribute in the <a> opening tags, for example: **<a href="establishment.inspection_detail?id=1452519.015" title="1452519.015">**
+(Yes, there can be multiple attributes for a tag.)
+
+What CSS selector do we use to target activity numbers? 
+
+Here's why 'td:nth-child(3) a' gets what we want.
+
+First of all, the data cells in third column in a table translates to "td:nth-child(3)" in CSS language. But this will get us cells in third columns in all tables on the page.
+
+Next, if we pass as CSS selector "A B", that means "Select all B inside of A". So "td:nth-child(3) a" will get us nodes with <a> tags inside the data cells in the third column, and because the other table's third column data isn't hyperlinked, it won't be selected. 
+
+[SelectorGaght Chrome extention] (http://selectorgadget.com/) is really useful in finding the CSS selector based on your point and clicks. I also strongly recommend that you go through this fun and interactive [CSS selector tutorial] (http://flukeout.github.io/).
+
+Next save the activity numbers to a vector.
+```{r}
+act_num <- html_nodes(webpage, 'td:nth-child(3) a') %>% html_attr("title")
+
+length(act_num) ## double check how many activity numbers
+
+head(act_num)
+
+```
+
+## Replace the Activity column with complete activity numbers
+```{r}
+# replace the Activity column with the act_num vector
+inspections$Activity <- act_num 
+
+# delete first empty column
+inspections <- inspections[,-1]
+
+head(inspections)
+```
+
+## Extract which inspections are incomplete based on italic style with html_text()
+
+The webpage says "inspections which are known to be incomplete will have the identifying Activity Nr shown in italic" but that information is missed in the table above.
+
+Inspect elements and compare italic and non-italic numbers, we realize we need to target numbers wrapped in <em> tags. <em> in HTML means the text is displayed in italic. To avoid getting all <em> tags on the page, "td a em" only selects <em> tags inside <a> tags inside <td> tags. 
+
+```{r}
+open_cases <- html_nodes(webpage,"td a em") %>% 
+  html_text()
+
+length(open_cases)
+
+head(open_cases)
+```
+
+## Create a new column for whether the case is incomplete
+```{r}
+inspections$status <- ifelse(inspections$Activity %in% open_cases, "incomplete", "complete")
+inspections <- inspections[,-1]
+inspections
+```
+
+## Get the tables hidden behind the hyperlinks
+So far we have scraped the inspection table on this page, but for inspections where violations were found, there's more information on the cases' hyperlinked pages, and that can be scraped too.
+
+### Let's scrape the violation information for one of the inspections
+```{r}
+url2 <- "https://www.osha.gov/pls/imis/establishment.inspection_detail?id=1447292.015"
+violation <- html_table(html_nodes(read_html(url2, encoding = "windows-1252"), "[class='tablei table-borderedi']")[[2]]) %>% data.frame()
+violation
+```
+
+The column names appear this way because the table has a merged cell as header. Fix the column names by making the first row of the dataframe into column names.
+
+```{r}
+#make first row the column names
+colnames(violation) <- as.character(unlist(table2[1,]))
+
+#delete the first row because it's now duplicate with column names
+violation <- violation[-1,]
+
+violation
+```
+
+### Create a function to scrape violation information.
+
+The pages of inspections have consistent urls: "https://www.osha.gov/pls/imis/establishment.inspection_detail?id=", followed by the activity number.
+
+```{r}
+readAct_Num <- function(act_num) {
+  url <- paste("https://www.osha.gov/pls/imis/establishment.inspection_detail?id=",act_num, sep="")
+  violation <- html_table(html_nodes(read_html(url2, encoding = "windows-1252"), "[class='tablei table-borderedi']")[[2]]) %>% data.frame()
+  colnames(violation) <- as.character(unlist(violation[1,]))
+  violation <- violation[-1,] 
+  violation$activity_number <- act_num
+  return(violation)
+}
+```
+
+### Apply the function to all activity numbers that have violations.
+
+```{r}
+lapply(inspections$Activity[!is.na(inspections$Vio)], readAct_Num) %>% bind_rows() %>% unique()
+```
+
+We realize the first column is always empty, so we can add delete the first column in the function.
+
+```{r}
+
+readAct_Num <- function(act_num) {
+  url <- paste("https://www.osha.gov/pls/imis/establishment.inspection_detail?id=",act_num, sep="")
+  table <- html_table(html_nodes(read_html(url, encoding = "windows-1252"), "[class='tablei table-borderedi']")[[2]]) %>% data.frame()
+  colnames(table) <- as.character(unlist(table[1,]))
+  table <- table[-1,-1] ## deletes the first column now
+  table$activity_number <- act_num
+  return(table)
+}
+
+```
+
+Apply the new function to all activity numbers that have violations.
+```{r}
+## save to an object called violations
+violations <- lapply(inspections$Activity[!is.na(inspections$Vio)], readAct_Num) %>% bind_rows() %>% unique()
+
+violations
+```
+
+Now we can merge the violations information with the inspections table
+
+```{r}
+merge(inspections, violations, by.x = "Activity", by.y = "activity_number") %>% head()
+```
+
+## Dealing with errors
+When the data you scrape gets big, you might be identified as a robot and blocked by the website. You will see "Http 403 Forbidden Error" You can avoid that by adding a pause each time using Sys.sleep(). Look for 'robots.txt' on the site you're trying to scrape. Sometimes it tells you how many seconds you need to pause. 
+
+Using a "User-agent" also helps because it disguises the scraping as visits by a web browswer. 
+
+```{r}
+uastring <- "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
+html_session(url,user_agent(uastring))
+```
+
+Also, just in case an error occurs and you lose everything you already scraped, you can use tryCatch() function. This way R keeps running when error occurs and tells you where error or warning is later.
+
+```{r}
+readAct_Num <- function(act_num) {
+  url <- paste("https://www.osha.gov/pls/imis/establishment.inspection_detail?id=",act_num, sep="")
+  out <- tryCatch(
+    {
+      table <- html_table(html_nodes(read_html(url, encoding = "windows-1252"), "[class='tablei table-borderedi']")[[2]])
+      colnames(table) <- as.character(unlist(table[1,]))
+      table <- table[-1,-1]
+      table$activity_number <- act_num
+      return(table)
+      Sys.sleep(6)
+    },
+    error=function(cond) {
+      message(paste("act_num caused an error:", act_num))
+      message("Here's the original error message:")
+      message(cond)
+      # Choose a return value in case of error
+      return(NA)
+      Sys.sleep(6)
+    },
+    warning=function(cond) {
+      message(paste("act_num caused a warning:", act_num))
+      message("Here's the original warning message:")
+      message(cond)
+      return(NULL)
+      Sys.sleep(6)
+    }
+  )
+  return(out)
+}
+
+```
+
+## Geting data to show in one page
+A lot of data are displayed on multiple pages, some tweaking of the URL helps you get all results to show up all at once. Here's a walk-through of how I got the URL we used in the scraping.
+
+So you want to look up the OSHA violations in the messenger courier industry in 2019, and you searched NAICS code "492110" on https://www.osha.gov/pls/imis/industry.html, and you got 159 results split up to 8 pages, 20 results each page.
+
+Original url: https://www.osha.gov/pls/imis/industry.search?p_logger=1&sic=&naics=492110&State=All&officetype=All&Office=All&endmonth=01&endday=01&endyear=2019&startmonth=12&startday=31&startyear=2019&owner=&scope=&FedAgnCode=
+
+When you click page 2, the url becomes: https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=20&p_sort=&p_desc=DESC&p_direction=Next&p_show=20
+
+Click back to page 1, the url becomes: https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=0&p_sort=&p_desc=DESC&p_direction=Next&p_show=20
+
+Change "show=" to 200, and now you can retrieve all results in one page.
+
+
+## Recap
+
+step 1: read_html(), read the webpage into R
+step 2: html_nodes(), pull elements/nodes with chosen tags or attributes
+step 3: extract text/attributes with html_attr()/html_text(), or parse table with html_table().
+
+## Homework
+
+Download all the comment letters for [this rule] (https://www.dol.gov/agencies/ebsa/laws-and-regulations/rules-and-regulations/public-comments/1210-AB85)? Hint: you will need download.file() function.
+
+
