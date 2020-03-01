@@ -296,13 +296,26 @@ A lot of data are displayed on multiple pages, some tweaking of the URL helps yo
 
 So you want to look up the OSHA violations in the messenger courier industry in 2019, and you searched NAICS code "492110" on https://www.osha.gov/pls/imis/industry.html, and you got 159 results split up to 8 pages, 20 results each page.
 
-Original url: https://www.osha.gov/pls/imis/industry.search?p_logger=1&sic=&naics=492110&State=All&officetype=All&Office=All&endmonth=01&endday=01&endyear=2019&startmonth=12&startday=31&startyear=2019&owner=&scope=&FedAgnCode=
 
-When you click page 2, the url becomes: https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=20&p_sort=&p_desc=DESC&p_direction=Next&p_show=20
+Original url: 
+```{r eval = FALSE}
+https://www.osha.gov/pls/imis/industry.search?p_logger=1&sic=&naics=492110&State=All&officetype=All&Office=All&endmonth=01&endday=01&endyear=2019&startmonth=12&startday=31&startyear=2019&owner=&scope=&FedAgnCode=
+```
 
-Click back to page 1, the url becomes: https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=0&p_sort=&p_desc=DESC&p_direction=Next&p_show=20
+When you click page 2, the url becomes:
+```{r eval = FALSE}
+https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=20&p_sort=&p_desc=DESC&p_direction=Next&p_show=20
+```
+
+Click back to page 1, the url becomes: 
+```{r eval = FALSE}
+https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=0&p_sort=&p_desc=DESC&p_direction=Next&p_show=20
+```
 
 Change "show=" to 200, and now you can retrieve all results in one page.
+```{r eval = FALSE}
+https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=0&p_sort=&p_desc=DESC&p_direction=Next&p_show=200
+```
 
 
 ## Recap
