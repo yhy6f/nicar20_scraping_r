@@ -223,7 +223,7 @@ violations %>% head()
 
 Now we can merge the violations information with the inspections table
 
-```{r}
+```{r eval = FALSE}
 merge(inspections, violations, by.x = "Activity", by.y = "activity_number", all.x = TRUE) %>% head()
 ```
 
