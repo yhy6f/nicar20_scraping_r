@@ -102,7 +102,7 @@ letters = do.call(rbind, Map(data.frame, id=l1,text=l2))
 letters
 ```
 
-Then you can analyze the text, i.e. sentiment analysis, with package Tidyverse.
+Then you can do some fun stuff with the texts, i.e. sentiment analysis. You can learn more about text mining in this free book: [Text Mining with R](https://www.tidytextmining.com/)!
 
 
 
