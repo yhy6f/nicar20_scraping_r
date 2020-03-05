@@ -5,7 +5,13 @@ Python is the go-to among data journalists for web-scraping, and for good reaons
 This is a session for NICAR 2020 and teachs how to use R library Rvest to scrape data from the web. 
 
 ## Main goals
-During the sessioin, we will walk through how to scrape a table of OSHA inspections, including additional tables hidden behind hyperlinks, extract information based on style of the text. In the process I will introduce what webpage is and how to find CSS selector by inspecting the source code. I will also offer some tips on how to deal with errors. 
+During the sessioin, we will walk through how to scrape a table of OSHA inspections, including additional tables hidden behind hyperlinks, extract information based on style of the text. The main goal is that you walk away with knowledge about:
+
++ what a webpage is 
++ how to find CSS selector by inspecting the source code
++ a few most useful Rvest functions
+
+I will also offer some tips on how to deal with errors. 
 
 As homework, I ask you to try scraping some comment letters for a proposed federal rule.
 
