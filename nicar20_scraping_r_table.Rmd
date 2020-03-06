@@ -34,7 +34,7 @@ To extract the elements we want from the html document, we need to find the righ
 
 Click [here](https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=492110&state=All&officetype=All&office=All&startmonth=12&startday=31&startyear=2019&endmonth=01&endday=01&endyear=2019&opt=&optt=&scope=&fedagncode=&owner=&emph=&emphtp=&p_start=&p_finish=0&p_sort=&p_desc=DESC&p_direction=Next&p_show=200) to visit the page we're going to scrape. Place your mouse on "Activity" column of the table, right click on the page and click "Inspect". "Elements" tab highlights where your mouse placed. "Sources" tab shows the entire html file.
 
-The HTML code looks like a tree. It has two main branches: `<head>`, `<body>`, each has consist of subbranch `<div>`s, (think of `<div>`as a section). Within each `<div>`, there can be more `<div>`s, or `<table>` and other elements. Within a `<table>`, there is `<thead>` (table head), `<tbody>` (table body), `<tr>` (table row), `<th>` (header cell), `<td>` (data cell). 
+The HTML code looks like a tree. It has two main branches: `<head>`, `<body>`, each has consist of sub-branch `<div>`s, (think of `<div>`as a section). Within each `<div>`, there can be more `<div>`s, or `<table>` and other elements. Within a `<table>`, there is `<thead>` (table head), `<tbody>` (table body), `<tr>` (table row), `<th>` (header cell), `<td>` (data cell). What we call a node can be any branch or sub-branch of this tree.
 
 ## Now let's scrape a table!
 
@@ -183,7 +183,7 @@ violation
 
 The pages of inspections have consistent urls: "https://www.osha.gov/pls/imis/establishment.inspection_detail?id=", followed by the activity number. So in the function we just need to stich together that pattern with the individual activity number.
 
-```{r}
+```{r eval=FALSE}
 readAct_Num <- function(act_num) {
   url <- paste("https://www.osha.gov/pls/imis/establishment.inspection_detail?id=",act_num, sep="")
   # stitch together the pattern and each activity number, leave no space in between
@@ -197,18 +197,18 @@ readAct_Num <- function(act_num) {
 
 ### Apply the function to all activity numbers that have violations.
 
-```{r}
+```{r eval=FALSE}
 ## lapply(inspections$Activity[!is.na(inspections$Vio)], readAct_Num) %>% bind_rows() %>% unique() %>% head()
 ```
 
-Not going to run it for time's sake, but after running it you will realize the first column is always empty. And since the second column is also useless, so we can delete the first two columns in the function.
+After running it you will realize the first column is always empty. And since the second column is also useless, so we can delete the first two columns in the violations table in the function.
 
 ```{r}
 readAct_Num <- function(act_num) {
   url <- paste("https://www.osha.gov/pls/imis/establishment.inspection_detail?id=",act_num, sep="")
   table <- html_table(html_nodes(read_html(url, encoding = "windows-1252"), "[class='tablei table-borderedi']")[[2]]) %>% data.frame()
   colnames(table) <- as.character(unlist(table[1,]))
-  table <- table[-1,-c(1:2)] ## deletes the first column now
+  table <- table[-1,-c(1:2)] ## deletes the first two columns
   table$activity_number <- act_num
   return(table)
 }
@@ -226,6 +226,12 @@ Now we can merge the violations information with the inspections table
 ```{r eval = FALSE}
 merge(inspections, violations, by.x = "Activity", by.y = "activity_number", all.x = TRUE) %>% head()
 ```
+
+## Recap
+
+* step 1: read_html(), read the webpage into R
+* step 2: html_nodes(), pull elements/nodes with chosen tags or attributes
+* step 3: extract text/attributes with html_attr()/html_text(), or parse table with html_table().
 
 ## Dealing with errors
 When the data you scrape is big, you might be identified as a robot and blocked by the website. You will see "Http 403 Forbidden Error". You might avoid that by adding a pause between each time your hit the website server by adding Sys.sleep() in your code. 
@@ -294,8 +300,7 @@ readAct_Num <- function(act_num) {
 ## Geting data to show in one page
 A lot of data are displayed on multiple pages, some tweaking of the URL helps you get all results to show up all at once. Here's a walk-through of how I got the URL we used in the scraping.
 
-So you want to look up the OSHA violations in the messenger courier industry in 2019, and you searched NAICS code "492110" on https://www.osha.gov/pls/imis/industry.html, and you got 159 results split up to 8 pages, 20 results each page.
-
+So you want to look up the OSHA violations in the messenger courier industry in 2019, and you searched NAICS code "492110" [here](https://www.osha.gov/pls/imis/industry.html), and you got 161 results split up to 9 pages, 20 results each page for the first 8 pages.
 
 Original url: 
 ```{r eval = FALSE}
@@ -318,12 +323,6 @@ https://www.osha.gov/pls/imis/industry.search?sic=&sicgroup=&naicsgroup=&naics=4
 ```
 
 
-## Recap
-
-*step 1: read_html(), read the webpage into R
-*step 2: html_nodes(), pull elements/nodes with chosen tags or attributes
-*step 3: extract text/attributes with html_attr()/html_text(), or parse table with html_table().
-
 ## Homework
 
-Download all the comment letters for [this rule] (https://www.dol.gov/agencies/ebsa/laws-and-regulations/rules-and-regulations/public-comments/1210-AB85)? Hint: you will need download.file() function.
+Download all the comment letters for [this rule](https://www.dol.gov/agencies/ebsa/laws-and-regulations/rules-and-regulations/public-comments/1210-AB85)? Hint: you will need download.file() function.
