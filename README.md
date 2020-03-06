@@ -17,7 +17,9 @@ After this session you will walk away with knowledge about:
   + html_attr()
   + html_text()
 
-I will also offer some tips on how to deal with errors. 
+I will also offer some tips on how to deal with errors.
+
+A rendered HTML file of the tutorial can be found [here](https://rpubs.com/Jasmineyehan/582039).
 
 As homework, I ask you to try scraping some comment letters for a proposed federal rule.
 
