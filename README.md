@@ -2,7 +2,7 @@
 
 Python is the go-to among data journalists for web-scraping, and for good reaons. But it's not the only tool. Web scraping can be easy in R. Plus you get to enjoy other advantages of R such as data visualization.
 
-This is a session for NICAR 2020 and teachs how to use R library Rvest to scrape data from the web. Rvest is a library inspired by Beautiful Soup written by Hadley Wickham. 
+This is a session for NICAR 2020 and teachs how to use R library Rvest to scrape data from the web. [Rvest](https://github.com/tidyverse/rvest) is a library inspired by Beautiful Soup written by Hadley Wickham. It's easy to learn and use. 
 
 ## What we're covering
 During the sessioin, we will walk through how to scrape a table of OSHA inspections, including additional tables hidden behind hyperlinks, extract information based on style of the text. 
