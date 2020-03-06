@@ -1,0 +1,142 @@
+---
+title: "nicar2020_r_scraping_backup"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Web scraping with R
+This is a tutorial that serves as an intro to scraping with R using Rvest library. It walks through how to scrape a few hundred comment letters from a federal agency website.
+
+## A quick intro to webpage
+Webpages usually consist of:
+* HTML (HyperText Markup Language) files, which build structure of the page
+* CSS (Cascading Style Sheet) files, which define the style or look of the page
+* JavaScript files, which make the page interactive
+
+An HTML file is a text file with HTML tags, which are reserved keywords for certain elements and they remind your your web browswer, "hey, here's a table/paragraph/list, please display it as a table/paragraph/list". And most tags must be in pairs, an opening tag and a closing tag, i.e. `<table></table>`, `<p></p>`, `<li></li>`.
+
+These tags can have attributes such as:
+* hyperlinks: `<a href='https://www.osha.gov/'>Occupational Safety and Health</a>`
+* class: `<table class='table table-bordered'>`
+* id: `<h1 id='myHeader'>Hello World!</h1>`
+
+You can learn more about HTML tags [here](https://www.w3schools.com/tags/tag_comment.asp
+)
+
+## Inspect elements
+To extract the elements we want from the html document, we need to find the right tags and attributes in the source code. 
+
+Click [here](https://www.dol.gov/agencies/ebsa/laws-and-regulations/rules-and-regulations/public-comments/1210-AB85) to visit the page we're going to scrape. Scroll down to Comments 1-722, place your mouse on the hyperlinked comment letter, right click and click "Inspect". A window pups up, where "Elements" tab highlights where your mouse placed. "Sources" tab shows the entire html file.
+
+If you look at the entire HTML code, it looks like a tree. It has two main branches: `<head>`, `<body>`, each has consist of subbranch `<div>`s, (think of `<div>`as a section). Within each `<div>`, there can be more `<div>`s, or `<ol>`, `<li>`,`<a>` and other elements. 
+
+What we call a node can be any sub-branch of this tree.
+
+## Now let's scrape some PDFs
+First load the libraries we need.
+```{r message=FALSE}
+## install the package
+#install.packages("rvest")
+#install.packages("dplyr")
+## load the package
+library(rvest)
+library(dplyr)
+```
+
+There are 722 comment letters on the page.
+
+## read_html(): read the webpage/html document into R
+```{r}
+webpage <- read_html("https://www.dol.gov/agencies/ebsa/laws-and-regulations/rules-and-regulations/public-comments/1210-AB85")
+webpage
+```
+
+## html_nodes(): select elements/nodes from the html
+
+We can select certain elements in the html document, or "nodes", by picking out certain feature, we do that by passing on what is called "CSS selector" to the html_nodes() function. You can also pass on "Xpath" but we're not covering it today.
+
+By inspecting the elements we found that the hyperlinks to download the PDFs are wrapped around in `<a>` tags, because in HTML `<a>` is a tag reserved for hyperlinks.
+
+The following line is telling R to pull nodes with "a" tags.
+```{r}
+html_nodes(webpage, 'a')
+```
+
+How do we target just those PDFs?
+IF you inpect elements of a few more letters you will realize that there is something in common. They are `<a>` tags wrapped around in `<ol>` tags, which are further wrapped in `<li>` tags.
+
+And that translates to "li ol a", becase "A B" selects "all B inside of A", as shown in level 4 of this interactive CSS selector [tutorial](http://flukeout.github.io/).
+
+## html_attr: extract attributes hyperlinks
+
+After we get the nodes we want, we are extracting hyperlinks from them. The code below means, get the href attribute values from those `<a>` tags, and the values are the urls to PDFs.
+```{r}
+urls <- html_nodes(webpage, 'ol li a') %>% html_attr("href")
+length(urls)
+tail(urls)
+```
+
+The last two urls are hyperlinks for petitions not comment letters. They were also pulled because of the same tags "ol li a".
+
+A combination of HTML class and tags can help us pull elements more precisely because the comment letters and petitions have different column width. And by inspecting elements, we see that comment letters are in a `<div>` with class attribute ".col-sm-4", while petitions are in a `<div>` with class attribute ".col-sm-6".
+
+```{r}
+html_nodes(webpage, '.col-sm-4 ol li a') %>% head()
+
+urls <- html_nodes(webpage, 'ol li a') %>% html_attr("href") %>% head() #just scraping the first six for demonstration purpose
+
+urls
+```
+
+## Download the PDFs
+
+You can't download the PDFs from these urls yet, because the complete urls start with "https://www.dol.gov".
+
+Now let's download the first pdf to the letter folder, using download.file() function
+```{r}
+download.file("https://www.dol.gov/sites/dolgov/files/EBSA/laws-and-regulations/rules-and-regulations/public-comments/1210-AB85/00001.pdf", "~/Desktop/nicar2020/nicar_2020_scraping_r/letter/1.pdf", mode="wb")
+```
+
+The first argument is the url to download, the second is the destimation for the file (and you need a full path), the third is mode.
+
+We can download multiple files using for loop, repeating the same action for every url.
+```{r, eval=FALSE}
+download.folder = '~/Desktop/nicar2020/nicar_2020_scraping_r/letter'
+for(i in seq_along(urls)){
+    pdf.name = paste(download.folder, i, '.pdf', sep = '') ## create the full file path
+    dol_url = paste("https://www.dol.gov", urls[i], sep = '') ## create the complete urls of PDFs by stiching together the domain, and the scraped urls
+    download.file(dol_url, pdf.name, mode="wb") ## for each 
+    Sys.sleep(5) #pause for 5 seconds
+}
+```
+
+Next you can use pdftools to parse the pdf files
+```{r}
+#install.packages("pdftools")
+library(pdftools)
+base_directory<- '~/Desktop/nicar2020/nicar_2020_scraping_r/letter'
+file.path(base_directory, "1.pdf") %>% pdf_text()
+```
+
+```{r}
+library(pdftools)
+l1 = c() ##create an empty vector to store the letter numbers
+l2 = c() ##create an empty vector to store the text objects
+for(i in seq_along(urls)){
+
+    pdf.name = paste("~/Desktop/nicar2020/nicar_2020_scraping_r/letter/", i, '.pdf', sep = '') ##file name of the pdf to be extracted
+    txt = pdf_text(pdf.name) ##extract the text from the pdf
+    out = capture.output(cat(txt)) ## turn the text into readable format
+    l2 = c(l2,out) ## add the text object into the list
+    l1 = c(l1, rep(i,length(out)))
+}
+letters = do.call(rbind, Map(data.frame, id=l1,text=l2))
+letters
+```
+
+Then you can do some fun stuff with the texts, i.e. sentiment analysis. You can learn more about text mining in this free book: [Text Mining with R](https://www.tidytextmining.com/)!
+
+
