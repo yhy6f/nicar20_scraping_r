@@ -40,3 +40,5 @@ A local version of the repo should be saved to your desktop.
 Packages you'll need to install for this session:
 
 `Rvest`, `Dplyr`
+
+If you have any questions, feel free to reach out. I'm on Twitter @JasmineHanYe or Yhan AT Bloomberglaw dot com.
