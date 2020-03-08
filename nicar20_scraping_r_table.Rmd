@@ -1,6 +1,6 @@
 ---
 title: "nicar20_scraping_r_table"
-author: "YHan"
+author: "Jasmine Ye Han"
 date: "12/28/2019"
 output: html_document
 ---
