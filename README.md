@@ -44,7 +44,7 @@ Packages you'll need to install for this session:
 ## Q&A
 
 + Where do I learn more about Rvest?
-  + Rvest has a detailed document table on CRAN: https://cran.r-project.org/web/packages/rvest/rvest.pdf
+  + Rvest has detailed documentation on CRAN: https://cran.r-project.org/web/packages/rvest/rvest.pdf
 + Can you scrape dynamic websites with R?
   + Apparently there is an Rselenium package: https://ropensci.org/tutorials/rselenium_tutorial/, which I wasn't aware of until the session, so thanks for the question, and to Christina who helped me answer it.
 
